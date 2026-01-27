@@ -18,7 +18,11 @@
             </svg>
             <h3 class="mt-4 text-lg font-medium text-gray-900">Your cart is empty</h3>
             <p class="mt-2 text-sm text-gray-500">Start adding some products to your cart.</p>
-            <a href="{{ route('products') }}" class="mt-6 inline-flex items-center rounded-lg bg-blue-600 px-4 py-2 text-sm font-medium text-white hover:bg-blue-700">
+            <a
+                wire:navigate
+                href="{{ route('products') }}"
+                class="mt-6 inline-flex items-center rounded-lg bg-blue-600 px-4 py-2 text-sm font-medium text-white hover:bg-blue-700"
+            >
                 Browse Products
             </a>
         </div>
@@ -33,8 +37,8 @@
                                 <p class="mt-1 text-sm text-gray-600">Price: ${{ number_format($item->product->price, 2) }}</p>
                                 <p class="mt-1 text-sm text-gray-600">Subtotal: ${{ number_format($item->quantity * $item->product->price, 2) }}</p>
                             </div>
-                            
-                            <button 
+
+                            <button
                                 wire:click="removeItem({{ $item->id }})"
                                 wire:confirm="Are you sure you want to remove this item?"
                                 class="text-red-600 hover:text-red-800"
@@ -48,17 +52,17 @@
                         <div class="mt-4 flex items-center space-x-4">
                             <span class="text-sm font-medium text-gray-700">Quantity:</span>
                             <div class="flex items-center space-x-2">
-                                <button 
+                                <button
                                     wire:click="updateQuantity({{ $item->id }}, 'decrement')"
                                     class="rounded-lg border border-gray-300 px-3 py-1 text-gray-700 hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-blue-500"
                                     wire:loading.attr="disabled"
                                 >
                                     -
                                 </button>
-                                
+
                                 <span class="w-12 text-center text-lg font-semibold">{{ $item->quantity }}</span>
-                                
-                                <button 
+
+                                <button
                                     wire:click="updateQuantity({{ $item->id }}, 'increment')"
                                     class="rounded-lg border border-gray-300 px-3 py-1 text-gray-700 hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-blue-500"
                                     wire:loading.attr="disabled"
@@ -67,7 +71,7 @@
                                     +
                                 </button>
                             </div>
-                            
+
                             @if ($item->quantity >= $item->product->stock_quantity)
                                 <span class="text-sm text-red-600">Max quantity reached</span>
                             @endif
@@ -81,9 +85,9 @@
                     <span class="text-xl font-semibold text-gray-900">Total:</span>
                     <span class="text-2xl font-bold text-gray-900">${{ number_format($total, 2) }}</span>
                 </div>
-                
+
                 <div class="mt-6">
-                    <button 
+                    <button
                         wire:click="proceedToOrder"
                         wire:confirm="Are you sure you want to place this order?"
                         class="w-full rounded-lg bg-green-600 px-6 py-3 text-base font-semibold text-white shadow-sm hover:bg-green-700 focus:outline-none focus:ring-2 focus:ring-green-500 focus:ring-offset-2"

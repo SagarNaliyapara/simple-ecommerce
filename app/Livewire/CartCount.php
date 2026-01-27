@@ -18,7 +18,9 @@ class CartCount extends Component
     #[On('cart-updated')]
     public function updateCount(): void
     {
-        $this->count = CartItem::query()->where('user_id', auth()->id())->count();
+        $this->count = CartItem::query()
+            ->where('user_id', auth()->id())
+            ->count();
     }
 
     public function render()

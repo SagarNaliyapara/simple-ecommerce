@@ -1,0 +1,24 @@
+<?php
+
+namespace App\Livewire\Forms;
+
+use App\Models\User;
+use Livewire\Form;
+use Illuminate\Validation\Rules;
+
+class RegisterForm extends Form
+{
+    public string $name = '';
+    public string $email = '';
+    public string $password = '';
+    public string $password_confirmation = '';
+
+    public function rules(): array
+    {
+        return [
+            'name' => ['required', 'string', 'max:255'],
+            'email' => ['required', 'string', 'lowercase', 'email', 'max:255', 'unique:'.User::class],
+            'password' => ['required', 'string', 'confirmed', Rules\Password::defaults()],
+        ];
+    }
+}

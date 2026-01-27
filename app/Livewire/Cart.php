@@ -5,8 +5,8 @@ namespace App\Livewire;
 use App\Models\CartItem;
 use App\Models\Order;
 use App\Models\OrderItem;
+use Illuminate\Contracts\View\View;
 use Illuminate\Support\Facades\DB;
-use Livewire\Attributes\On;
 use Livewire\Component;
 
 class Cart extends Component
@@ -53,9 +53,12 @@ class Cart extends Component
 
     public function proceedToOrder(): void
     {
+        $userId = auth()->id();
+
         $cartItems = CartItem::query()
-            ->with('product')
-            ->where('user_id', auth()->id())
+            ->where('user_id', $userId)
+            ->with('product:id,name,price,stock_quantity')
+            ->lockForUpdate()
             ->get();
 
         if ($cartItems->isEmpty()) {
@@ -63,41 +66,41 @@ class Cart extends Component
             return;
         }
 
-        foreach ($cartItems as $item) {
-            if ($item->quantity > $item->product->stock_quantity) {
-                session()->flash('error', "Insufficient stock for {$item->product->name}. Available: {$item->product->stock_quantity}");
-                return;
-            }
+        $hasOutOfStock = $cartItems->contains(fn ($item) =>
+            $item->quantity > $item->product->stock_quantity
+        );
+
+        if ($hasOutOfStock) {
+            session()->flash('error', 'One or more products are out of stock.');
+            return;
         }
 
-        DB::transaction(function () use ($cartItems) {
-            // Calculate total
-            $total = $cartItems->sum(function ($item) {
-                return $item->quantity * $item->product->price;
-            });
+        DB::transaction(function () use ($cartItems, $userId) {
 
-            // Create order
-            $order = Order::create([
-                'user_id' => auth()->id(),
+            $total = $cartItems->sum(fn ($item) =>
+                $item->quantity * $item->product->price
+            );
+
+            $order = Order::query()->create([
+                'user_id' => $userId,
                 'total_amount' => $total,
                 'status' => 'pending',
             ]);
 
-            // Create order items and deduct stock
-            foreach ($cartItems as $cartItem) {
-                OrderItem::create([
-                    'order_id' => $order->id,
-                    'product_id' => $cartItem->product_id,
-                    'quantity' => $cartItem->quantity,
-                    'price' => $cartItem->product->price,
-                ]);
+            $orderItems = $cartItems->map(fn ($item) => [
+                'order_id' => $order->id,
+                'product_id' => $item->product_id,
+                'quantity' => $item->quantity,
+                'price' => $item->product->price,
+                'created_at' => now(),
+                'updated_at' => now(),
+            ])->toArray();
 
-                // Deduct stock quantity
-                $cartItem->product->decrement('stock_quantity', $cartItem->quantity);
-            }
+            OrderItem::query()->insert($orderItems);
 
-            // Clear cart
-            CartItem::where('user_id', auth()->id())->delete();
+            $cartItems->each(fn ($item) => $item->product->decrement('stock_quantity', $item->quantity));
+
+            CartItem::query()->where('user_id', $userId)->delete();
         });
 
         session()->flash('success', 'Order placed successfully!');
@@ -105,8 +108,7 @@ class Cart extends Component
         $this->redirect(route('orders'), navigate: true);
     }
 
-    #[On('cart-updated')]
-    public function render()
+    public function render(): View
     {
         $cartItems = CartItem::query()
             ->with('product')

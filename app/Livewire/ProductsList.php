@@ -4,6 +4,7 @@ namespace App\Livewire;
 
 use App\Models\CartItem;
 use App\Models\Product;
+use Illuminate\Contracts\View\View;
 use Livewire\Attributes\On;
 use Livewire\Component;
 
@@ -13,8 +14,11 @@ class ProductsList extends Component
     {
         if (!auth()->check()) {
             session(['pending_cart_product' => $productId]);
-            return redirect()->route('login');
+            $this->redirect(route('login'), navigate: true);
+            return;
         }
+
+        $userId = auth()->id();
 
         $product = Product::query()->findOrFail($productId);
 
@@ -24,21 +28,22 @@ class ProductsList extends Component
         }
 
         $cartItem = CartItem::query()
-            ->where('user_id', auth()->id())
+            ->where('user_id', $userId)
             ->where('product_id', $productId)
             ->first();
 
         if ($cartItem) {
             if ($cartItem->quantity >= $product->stock_quantity) {
                 session()->flash('error', 'Cannot add more. Stock limit reached.');
-                return redirect()->route('cart');
+                $this->redirect(route('cart'), navigate: true);
+                return;
             }
 
             $cartItem->increment('quantity');
             session()->flash('success', 'Cart updated successfully.');
         } else {
             CartItem::query()->create([
-                'user_id' => auth()->id(),
+                'user_id' => $userId,
                 'product_id' => $productId,
                 'quantity' => 1,
             ]);
@@ -46,10 +51,10 @@ class ProductsList extends Component
         }
 
         $this->dispatch('cart-updated');
-        return redirect()->route('cart');
+        $this->redirect(route('cart'), navigate: true);
     }
 
-    public function render()
+    public function render(): View
     {
         return view('livewire.products-list', [
             'products' => Product::all(),
