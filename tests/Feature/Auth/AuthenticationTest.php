@@ -2,6 +2,8 @@
 
 namespace Tests\Feature\Auth;
 
+use App\Models\CartItem;
+use App\Models\Product;
 use App\Models\User;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Livewire\Volt\Volt;
@@ -82,5 +84,101 @@ class AuthenticationTest extends TestCase
             ->assertRedirect('/');
 
         $this->assertGuest();
+    }
+
+    public function test_login_with_pending_cart_product_adds_to_cart(): void
+    {
+        $user = User::factory()->create();
+
+        $product = Product::query()->create([
+            'name' => 'Test Product',
+            'price' => 29.99,
+            'stock_quantity' => 10,
+        ]);
+
+        session(['pending_cart_product' => $product->id]);
+
+        $component = Volt::test('pages.auth.login')
+            ->set('form.email', $user->email)
+            ->set('form.password', 'password');
+
+        $component->call('login');
+
+        $component
+            ->assertHasNoErrors()
+            ->assertRedirect(route('cart', absolute: false));
+
+        $this->assertAuthenticated();
+
+        $this->assertDatabaseHas('cart_items', [
+            'user_id' => $user->id,
+            'product_id' => $product->id,
+            'quantity' => 1,
+        ]);
+    }
+
+    public function test_login_with_pending_cart_product_increments_existing_cart_item(): void
+    {
+        $user = User::factory()->create();
+
+        $product = Product::query()->create([
+            'name' => 'Test Product',
+            'price' => 29.99,
+            'stock_quantity' => 10,
+        ]);
+
+        CartItem::query()->create([
+            'user_id' => $user->id,
+            'product_id' => $product->id,
+            'quantity' => 2,
+        ]);
+
+        session(['pending_cart_product' => $product->id]);
+
+        $component = Volt::test('pages.auth.login')
+            ->set('form.email', $user->email)
+            ->set('form.password', 'password');
+
+        $component->call('login');
+
+        $component
+            ->assertHasNoErrors()
+            ->assertRedirect(route('cart', absolute: false));
+
+        $this->assertDatabaseHas('cart_items', [
+            'user_id' => $user->id,
+            'product_id' => $product->id,
+            'quantity' => 3,
+        ]);
+    }
+
+    public function test_login_with_pending_out_of_stock_product_redirects_to_dashboard(): void
+    {
+        $user = User::factory()->create();
+
+        $product = Product::query()->create([
+            'name' => 'Out of Stock Product',
+            'price' => 19.99,
+            'stock_quantity' => 0,
+        ]);
+
+        session(['pending_cart_product' => $product->id]);
+
+        $component = Volt::test('pages.auth.login')
+            ->set('form.email', $user->email)
+            ->set('form.password', 'password');
+
+        $component->call('login');
+
+        $component
+            ->assertHasNoErrors()
+            ->assertRedirect(route('dashboard', absolute: false));
+
+        $this->assertAuthenticated();
+
+        $this->assertDatabaseMissing('cart_items', [
+            'user_id' => $user->id,
+            'product_id' => $product->id,
+        ]);
     }
 }

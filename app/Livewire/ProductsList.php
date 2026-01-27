@@ -9,7 +9,7 @@ use Livewire\Component;
 
 class ProductsList extends Component
 {
-    public function addToCart($productId)
+    public function addToCart($productId): void
     {
         if (! auth()->check()) {
             session(['pending_cart_product' => $productId]);
