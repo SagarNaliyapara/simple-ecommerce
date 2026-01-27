@@ -5,16 +5,16 @@ namespace App\Livewire;
 use App\Models\CartItem;
 use App\Models\Product;
 use Illuminate\Contracts\View\View;
-use Livewire\Attributes\On;
 use Livewire\Component;
 
 class ProductsList extends Component
 {
     public function addToCart($productId)
     {
-        if (!auth()->check()) {
+        if (! auth()->check()) {
             session(['pending_cart_product' => $productId]);
             $this->redirect(route('login'), navigate: true);
+
             return;
         }
 
@@ -24,6 +24,7 @@ class ProductsList extends Component
 
         if ($product->stock_quantity < 1) {
             session()->flash('error', 'Product is out of stock.');
+
             return;
         }
 
@@ -36,6 +37,7 @@ class ProductsList extends Component
             if ($cartItem->quantity >= $product->stock_quantity) {
                 session()->flash('error', 'Cannot add more. Stock limit reached.');
                 $this->redirect(route('cart'), navigate: true);
+
                 return;
             }
 

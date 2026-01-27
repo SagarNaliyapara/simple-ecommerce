@@ -23,6 +23,7 @@ class Cart extends Component
         if ($action === 'increment') {
             if ($cartItem->quantity >= $product->stock_quantity) {
                 session()->flash('error', 'Cannot add more. Stock limit reached.');
+
                 return;
             }
             $cartItem->increment('quantity');
@@ -63,22 +64,22 @@ class Cart extends Component
 
         if ($cartItems->isEmpty()) {
             session()->flash('error', 'Your cart is empty.');
+
             return;
         }
 
-        $hasOutOfStock = $cartItems->contains(fn ($item) =>
-            $item->quantity > $item->product->stock_quantity
+        $hasOutOfStock = $cartItems->contains(fn ($item) => $item->quantity > $item->product->stock_quantity
         );
 
         if ($hasOutOfStock) {
             session()->flash('error', 'One or more products are out of stock.');
+
             return;
         }
 
         DB::transaction(function () use ($cartItems, $userId) {
 
-            $total = $cartItems->sum(fn ($item) =>
-                $item->quantity * $item->product->price
+            $total = $cartItems->sum(fn ($item) => $item->quantity * $item->product->price
             );
 
             $order = Order::query()->create([

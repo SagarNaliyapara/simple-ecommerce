@@ -3,14 +3,17 @@
 namespace App\Livewire\Forms;
 
 use App\Models\User;
-use Livewire\Form;
 use Illuminate\Validation\Rules;
+use Livewire\Form;
 
 class RegisterForm extends Form
 {
     public string $name = '';
+
     public string $email = '';
+
     public string $password = '';
+
     public string $password_confirmation = '';
 
     public function rules(): array
