@@ -123,4 +123,16 @@ return [
         'store' => env('APP_MAINTENANCE_STORE', 'database'),
     ],
 
+    /*
+    |--------------------------------------------------------------------------
+    | Low Stock Threshold
+    |--------------------------------------------------------------------------
+    |
+    | When a product's stock quantity drops to or below this value after an
+    | order, an admin notification will be sent.
+    |
+    */
+
+    'low_stock_threshold' => (int) env('LOW_STOCK_THRESHOLD', 3),
+
 ];

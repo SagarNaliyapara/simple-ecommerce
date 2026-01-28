@@ -2,6 +2,7 @@
 
 namespace App\Livewire;
 
+use App\Jobs\SendLowStockNotification;
 use App\Models\CartItem;
 use App\Models\Order;
 use App\Models\OrderItem;
@@ -77,7 +78,7 @@ class Cart extends Component
             return;
         }
 
-        DB::transaction(function () use ($cartItems, $userId) {
+        $lowStockProducts = DB::transaction(function () use ($cartItems, $userId) {
 
             $total = $cartItems->sum(fn ($item) => $item->quantity * $item->product->price
             );
@@ -102,7 +103,20 @@ class Cart extends Component
             $cartItems->each(fn ($item) => $item->product->decrement('stock_quantity', $item->quantity));
 
             CartItem::query()->where('user_id', $userId)->delete();
+
+            $threshold = config('app.low_stock_threshold', 3);
+
+            return $cartItems
+                ->map(fn ($item) => [
+                    'name' => $item->product->name,
+                    'stock_quantity' => $item->product->stock_quantity,
+                ])
+                ->filter(fn ($p) => $p['stock_quantity'] <= $threshold);
         });
+
+        if ($lowStockProducts->isNotEmpty()) {
+            SendLowStockNotification::dispatch($lowStockProducts);
+        }
 
         session()->flash('success', 'Order placed successfully!');
         $this->dispatch('cart-updated');
