@@ -3,7 +3,7 @@
 namespace App\Jobs;
 
 use App\Mail\DailySalesReport;
-use App\Models\Order;
+use App\Services\OrderService;
 use Carbon\Carbon;
 use Illuminate\Bus\Queueable;
 use Illuminate\Contracts\Queue\ShouldQueue;
@@ -28,10 +28,7 @@ class SendDailySalesReport implements ShouldQueue
             return;
         }
 
-        $orders = Order::query()
-            ->with('orderItems.product')
-            ->whereDate('created_at', $this->date)
-            ->get();
+        $orders = app(OrderService::class)->getOrdersByDate($this->date);
 
         Mail::to($adminEmail)->send(new DailySalesReport($this->date, $orders));
     }

@@ -2,7 +2,7 @@
 
 namespace App\Livewire;
 
-use App\Models\CartItem;
+use App\Services\CartService;
 use Livewire\Attributes\On;
 use Livewire\Component;
 
@@ -18,9 +18,7 @@ class CartCount extends Component
     #[On('cart-updated')]
     public function updateCount(): void
     {
-        $this->count = CartItem::query()
-            ->where('user_id', auth()->id())
-            ->count();
+        $this->count = app(CartService::class)->countItems(auth()->id());
     }
 
     public function render()

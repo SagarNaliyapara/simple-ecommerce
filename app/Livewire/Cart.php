@@ -3,21 +3,23 @@
 namespace App\Livewire;
 
 use App\Jobs\SendLowStockNotification;
-use App\Models\CartItem;
-use App\Models\Order;
-use App\Models\OrderItem;
+use App\Services\CartService;
+use App\Services\OrderService;
 use Illuminate\Contracts\View\View;
-use Illuminate\Support\Facades\DB;
 use Livewire\Component;
 
 class Cart extends Component
 {
+    protected CartService $cartService;
+
+    public function __construct()
+    {
+        $this->cartService = app(CartService::class);
+    }
+
     public function updateQuantity($cartItemId, $action): void
     {
-        $cartItem = CartItem::query()
-            ->where('id', $cartItemId)
-            ->where('user_id', auth()->id())
-            ->firstOrFail();
+        $cartItem = $this->cartService->findItemOrFail($cartItemId, auth()->id());
 
         $product = $cartItem->product;
 
@@ -27,14 +29,14 @@ class Cart extends Component
 
                 return;
             }
-            $cartItem->increment('quantity');
+            $this->cartService->incrementQuantity($cartItem);
             session()->flash('success', 'Quantity updated.');
         } elseif ($action === 'decrement') {
             if ($cartItem->quantity > 1) {
-                $cartItem->decrement('quantity');
+                $this->cartService->decrementQuantity($cartItem);
                 session()->flash('success', 'Quantity updated.');
             } else {
-                $cartItem->delete();
+                $this->cartService->deleteItem($cartItem);
                 session()->flash('success', 'Item removed from cart.');
             }
         }
@@ -44,10 +46,7 @@ class Cart extends Component
 
     public function removeItem($cartItemId): void
     {
-        CartItem::query()
-            ->where('id', $cartItemId)
-            ->where('user_id', auth()->id())
-            ->delete();
+        $this->cartService->removeItem($cartItemId, auth()->id());
 
         session()->flash('success', 'Item removed from cart.');
         $this->dispatch('cart-updated');
@@ -57,11 +56,7 @@ class Cart extends Component
     {
         $userId = auth()->id();
 
-        $cartItems = CartItem::query()
-            ->where('user_id', $userId)
-            ->with('product:id,name,price,stock_quantity')
-            ->lockForUpdate()
-            ->get();
+        $cartItems = $this->cartService->getItemsWithLock($userId);
 
         if ($cartItems->isEmpty()) {
             session()->flash('error', 'Your cart is empty.');
@@ -78,41 +73,7 @@ class Cart extends Component
             return;
         }
 
-        $lowStockProducts = DB::transaction(function () use ($cartItems, $userId) {
-
-            $total = $cartItems->sum(fn ($item) => $item->quantity * $item->product->price
-            );
-
-            $order = Order::query()->create([
-                'user_id' => $userId,
-                'total_amount' => $total,
-                'status' => 'pending',
-            ]);
-
-            $orderItems = $cartItems->map(fn ($item) => [
-                'order_id' => $order->id,
-                'product_id' => $item->product_id,
-                'quantity' => $item->quantity,
-                'price' => $item->product->price,
-                'created_at' => now(),
-                'updated_at' => now(),
-            ])->toArray();
-
-            OrderItem::query()->insert($orderItems);
-
-            $cartItems->each(fn ($item) => $item->product->decrement('stock_quantity', $item->quantity));
-
-            CartItem::query()->where('user_id', $userId)->delete();
-
-            $threshold = config('app.low_stock_threshold', 3);
-
-            return $cartItems
-                ->map(fn ($item) => [
-                    'name' => $item->product->name,
-                    'stock_quantity' => $item->product->stock_quantity,
-                ])
-                ->filter(fn ($p) => $p['stock_quantity'] <= $threshold);
-        });
+        $lowStockProducts = app(OrderService::class)->placeOrder($cartItems, $userId);
 
         if ($lowStockProducts->isNotEmpty()) {
             SendLowStockNotification::dispatch($lowStockProducts);
@@ -125,10 +86,7 @@ class Cart extends Component
 
     public function render(): View
     {
-        $cartItems = CartItem::query()
-            ->with('product')
-            ->where('user_id', auth()->id())
-            ->get();
+        $cartItems = $this->cartService->getItems(auth()->id());
 
         $total = $cartItems->sum(function ($item) {
             return $item->quantity * $item->product->price;

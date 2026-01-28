@@ -2,13 +2,23 @@
 
 namespace App\Livewire;
 
-use App\Models\CartItem;
-use App\Models\Product;
+use App\Services\CartService;
+use App\Services\ProductService;
 use Illuminate\Contracts\View\View;
 use Livewire\Component;
 
 class ProductsList extends Component
 {
+    protected CartService $cartService;
+
+    protected ProductService $productService;
+
+    public function boot(CartService $cartService, ProductService $productService): void
+    {
+        $this->cartService = $cartService;
+        $this->productService = $productService;
+    }
+
     public function addToCart($productId): void
     {
         if (! auth()->check()) {
@@ -20,7 +30,7 @@ class ProductsList extends Component
 
         $userId = auth()->id();
 
-        $product = Product::query()->findOrFail($productId);
+        $product = $this->productService->findOrFail($productId);
 
         if ($product->stock_quantity < 1) {
             session()->flash('error', 'Product is out of stock.');
@@ -28,10 +38,7 @@ class ProductsList extends Component
             return;
         }
 
-        $cartItem = CartItem::query()
-            ->where('user_id', $userId)
-            ->where('product_id', $productId)
-            ->first();
+        $cartItem = $this->cartService->findItemByProduct($userId, $productId);
 
         if ($cartItem) {
             if ($cartItem->quantity >= $product->stock_quantity) {
@@ -41,14 +48,10 @@ class ProductsList extends Component
                 return;
             }
 
-            $cartItem->increment('quantity');
+            $this->cartService->incrementQuantity($cartItem);
             session()->flash('success', 'Cart updated successfully.');
         } else {
-            CartItem::query()->create([
-                'user_id' => $userId,
-                'product_id' => $productId,
-                'quantity' => 1,
-            ]);
+            $this->cartService->createItem($userId, $productId);
             session()->flash('success', 'Product added to cart.');
         }
 
@@ -59,7 +62,7 @@ class ProductsList extends Component
     public function render(): View
     {
         return view('livewire.products-list', [
-            'products' => Product::all(),
+            'products' => $this->productService->getAll(),
         ]);
     }
 }

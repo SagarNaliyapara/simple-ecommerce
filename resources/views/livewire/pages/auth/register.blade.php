@@ -1,13 +1,11 @@
 <?php
 
 use App\Livewire\Forms\RegisterForm;
-use App\Models\CartItem;
-use App\Models\Product;
 use App\Models\User;
+use App\Services\CartService;
+use App\Services\ProductService;
 use Illuminate\Auth\Events\Registered;
 use Illuminate\Support\Facades\Auth;
-use Illuminate\Support\Facades\Hash;
-use Illuminate\Validation\Rules;
 use Livewire\Attributes\Layout;
 use Livewire\Volt\Component;
 
@@ -28,15 +26,10 @@ class extends Component {
             $productId = session('pending_cart_product');
             session()->forget('pending_cart_product');
 
-            $product = Product::query()->find($productId);
+            $product = app(ProductService::class)->find($productId);
 
             if ($product && $product->stock_quantity > 0) {
-                CartItem::query()
-                    ->create([
-                        'user_id' => $user->id,
-                        'product_id' => $productId,
-                        'quantity' => 1,
-                    ]);
+                app(CartService::class)->createItem($user->id, $productId);
 
                 session()->flash('success', 'Product added to cart.');
 

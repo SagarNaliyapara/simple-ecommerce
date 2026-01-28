@@ -1,8 +1,8 @@
 <?php
 
 use App\Livewire\Forms\LoginForm;
-use App\Models\CartItem;
-use App\Models\Product;
+use App\Services\CartService;
+use App\Services\ProductService;
 use Illuminate\Support\Facades\Session;
 use Livewire\Attributes\Layout;
 use Livewire\Volt\Component;
@@ -23,26 +23,20 @@ new #[Layout('layouts.guest')] class extends Component
             $productId = session('pending_cart_product');
             session()->forget('pending_cart_product');
 
-            $product = Product::query()->find($productId);
+            $product = app(ProductService::class)->find($productId);
 
             if ($product && $product->stock_quantity > 0) {
-                $cartItem = CartItem::query()
-                    ->where('user_id', auth()->id())
-                    ->where('product_id', $productId)
-                    ->first();
+                $cartService = app(CartService::class);
+                $userId = auth()->id();
+                $cartItem = $cartService->findItemByProduct($userId, $productId);
 
                 if ($cartItem) {
                     if ($cartItem->quantity < $product->stock_quantity) {
-                        $cartItem->increment('quantity');
+                        $cartService->incrementQuantity($cartItem);
                         session()->flash('success', 'Product added to cart.');
                     }
                 } else {
-                    CartItem::query()
-                        ->create([
-                            'user_id' => auth()->id(),
-                            'product_id' => $productId,
-                            'quantity' => 1,
-                        ]);
+                    $cartService->createItem($userId, $productId);
                     session()->flash('success', 'Product added to cart.');
                 }
 
