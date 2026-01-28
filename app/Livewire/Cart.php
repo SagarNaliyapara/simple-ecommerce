@@ -88,9 +88,7 @@ class Cart extends Component
     {
         $cartItems = $this->cartService->getItems(auth()->id());
 
-        $total = $cartItems->sum(function ($item) {
-            return $item->quantity * $item->product->price;
-        });
+        $total = $cartItems->sum(fn ($item) => $item->quantity * $item->productPrice);
 
         return view('livewire.cart', [
             'cartItems' => $cartItems,

@@ -7,7 +7,7 @@ The following products have fallen below the stock threshold:
 | Product | Remaining Stock |
 |:--------|----------------:|
 @foreach ($products as $product)
-| {{ $product['name'] }} | {{ $product['stock_quantity'] }} |
+| {{ $product->name }} | {{ $product->stockQuantity }} |
 @endforeach
 </x-mail::table>
 

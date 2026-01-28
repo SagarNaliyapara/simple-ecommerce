@@ -47,7 +47,7 @@ class CartTest extends TestCase
 
         Livewire::actingAs($user)
             ->test(Cart::class)
-            ->assertViewHas('cartItems', fn (Collection $cartItems) => $cartItems->contains($cartItem))
+            ->assertViewHas('cartItems', fn (Collection $cartItems) => $cartItems->contains(fn ($item) => $item->id === $cartItem->id))
             ->assertViewHas('total', ($price * $cartItem->quantity))
             ->assertSee('Visible Product')
             ->assertSee('$42.50');

@@ -2,6 +2,9 @@
 
 namespace App\Services;
 
+use App\DTOs\LowStockProductDTO;
+use App\DTOs\OrderDTO;
+use App\DTOs\OrderItemDTO;
 use App\Models\Order;
 use App\Models\OrderItem;
 use Carbon\Carbon;
@@ -14,6 +17,7 @@ class OrderService
         protected CartService $cartService,
     ) {}
 
+    /** @return Collection<int, LowStockProductDTO> */
     public function placeOrder(Collection $cartItems, int $userId): Collection
     {
         return DB::transaction(function () use ($cartItems, $userId) {
@@ -37,35 +41,62 @@ class OrderService
 
             OrderItem::query()->insert($orderItems);
 
-            $cartItems->each(fn ($item) => $item->product->decrement('stock_quantity', $item->quantity));
+            $cartItems->each(function ($item) {
+                $item->product->decrement('stock_quantity', $item->quantity);
+                $item->product->refresh();
+            });
 
             $this->cartService->clearCart($userId);
 
-            $threshold = config('app.low_stock_threshold', 3);
-
             return $cartItems
-                ->map(fn ($item) => [
-                    'name' => $item->product->name,
-                    'stock_quantity' => $item->product->stock_quantity,
-                ])
-                ->filter(fn ($p) => $p['stock_quantity'] <= $threshold);
+                ->filter(fn ($item) => $item->product->stock_quantity <= $item->product->low_stock_threshold)
+                ->map(fn ($item) => new LowStockProductDTO(
+                    name: $item->product->name,
+                    stockQuantity: $item->product->stock_quantity,
+                ));
         });
     }
 
+    /** @return Collection<int, OrderDTO> */
     public function getOrdersForUser(int $userId): Collection
     {
         return Order::query()
             ->with(['orderItems.product'])
             ->where('user_id', $userId)
             ->orderBy('created_at', 'desc')
-            ->get();
+            ->get()
+            ->map(fn ($order) => new OrderDTO(
+                id: $order->id,
+                createdAt: $order->created_at,
+                status: $order->status,
+                totalAmount: (float) $order->total_amount,
+                items: $order->orderItems->map(fn ($item) => new OrderItemDTO(
+                    productId: $item->product_id,
+                    productName: $item->product->name,
+                    quantity: $item->quantity,
+                    price: (float) $item->price,
+                )),
+            ));
     }
 
+    /** @return Collection<int, OrderDTO> */
     public function getOrdersByDate(Carbon $date): Collection
     {
         return Order::query()
             ->with('orderItems.product')
             ->whereDate('created_at', $date)
-            ->get();
+            ->get()
+            ->map(fn ($order) => new OrderDTO(
+                id: $order->id,
+                createdAt: $order->created_at,
+                status: $order->status,
+                totalAmount: (float) $order->total_amount,
+                items: $order->orderItems->map(fn ($item) => new OrderItemDTO(
+                    productId: $item->product_id,
+                    productName: $item->product->name,
+                    quantity: $item->quantity,
+                    price: (float) $item->price,
+                )),
+            ));
     }
 }

@@ -34,7 +34,7 @@ A full-stack ecommerce shopping cart application built with Laravel 12, Livewire
 - **Guest-to-Cart Flow** — Guests can click "Add to Cart", log in or register, and the product is automatically added to their cart
 - **Order Placement** — Atomic order creation using database transactions with pessimistic locking (`lockForUpdate`) to prevent race conditions
 - **Stock Management** — Automatic stock decrement on order, prevents over-ordering, enforces stock limits on cart operations
-- **Low Stock Alerts** — Queued email notification sent to the admin when product stock drops to or below a configurable threshold
+- **Low Stock Alerts** — Queued email notification sent to the admin when product stock drops to or below the product's individual low stock threshold
 - **Daily Sales Reports** — Artisan command dispatches a queued job that emails a summary of orders and revenue for a given date
 - **Authentication** — Registration, login, logout, password reset, email verification (Laravel Breeze with Livewire/Volt)
 - **Real-time UI Updates** — Cart count badge updates across components via Livewire events
@@ -114,17 +114,15 @@ npm run build
 
 ## Configuration
 
-The application uses two custom environment variables beyond the standard Laravel defaults. Add these to your `.env` file:
+The application uses one custom environment variable beyond the standard Laravel defaults. Add this to your `.env` file:
 
 | Variable              | Description                                          | Default           |
 |-----------------------|------------------------------------------------------|--------------------|
 | `ADMIN_EMAIL`         | Email address for admin notifications (low stock alerts, daily reports) | `admin@example.com` |
-| `LOW_STOCK_THRESHOLD` | Stock quantity at or below which a low stock alert is triggered | `3` |
 
-These map to the following config keys:
+This maps to the following config key:
 
 - `config('mail.admin_email')` — read from `ADMIN_EMAIL`
-- `config('app.low_stock_threshold')` — read from `LOW_STOCK_THRESHOLD`
 
 If `ADMIN_EMAIL` is not set (or set to `null`), notification emails are silently skipped.
 
@@ -169,13 +167,13 @@ Clicking "Proceed to Order" on the cart page triggers an atomic database transac
 4. Bulk-inserts `OrderItem` records
 5. Decrements each product's `stock_quantity`
 6. Clears the user's cart
-7. Dispatches a `SendLowStockNotification` job if any product's stock falls to or below the configured threshold
+7. Dispatches a `SendLowStockNotification` job if any product's stock falls to or below that product's `low_stock_threshold`
 
 The order history page (`/orders`) displays all orders for the user in descending chronological order, with line-item details.
 
 ### Admin Notifications
 
-**Low Stock Alert** — Dispatched automatically after an order when any product's remaining stock is at or below `LOW_STOCK_THRESHOLD`. The email lists each affected product and its remaining quantity.
+**Low Stock Alert** — Dispatched automatically after an order when any product's remaining stock is at or below that product's `low_stock_threshold`. The email lists each affected product and its remaining quantity. Each product has its own configurable threshold stored in the database.
 
 **Daily Sales Report** — Triggered via the `report:daily-sales` artisan command. The email includes total order count, total revenue, a per-order breakdown, and a per-product quantity summary.
 

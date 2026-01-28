@@ -2,6 +2,7 @@
 
 namespace Tests\Feature;
 
+use App\DTOs\LowStockProductDTO;
 use App\Jobs\SendLowStockNotification;
 use App\Livewire\Cart;
 use App\Mail\LowStockAlert;
@@ -28,6 +29,7 @@ class LowStockNotificationTest extends TestCase
             'name' => 'Low Stock Widget',
             'price' => 25.00,
             'stock_quantity' => 5,
+            'low_stock_threshold' => 3,
         ]);
 
         CartItem::query()->create([
@@ -42,7 +44,7 @@ class LowStockNotificationTest extends TestCase
 
         // stock_quantity after order: 5 - 2 = 3 (equals threshold)
         Bus::assertDispatched(SendLowStockNotification::class, function ($job) {
-            return $job->products->contains(fn ($p) => $p['name'] === 'Low Stock Widget' && $p['stock_quantity'] === 3);
+            return $job->products->contains(fn ($p) => $p->name === 'Low Stock Widget' && $p->stockQuantity === 3);
         });
     }
 
@@ -56,6 +58,7 @@ class LowStockNotificationTest extends TestCase
             'name' => 'Almost Gone',
             'price' => 10.00,
             'stock_quantity' => 4,
+            'low_stock_threshold' => 3,
         ]);
 
         CartItem::query()->create([
@@ -70,7 +73,7 @@ class LowStockNotificationTest extends TestCase
 
         // stock_quantity after order: 4 - 3 = 1 (below threshold)
         Bus::assertDispatched(SendLowStockNotification::class, function ($job) {
-            return $job->products->contains(fn ($p) => $p['name'] === 'Almost Gone' && $p['stock_quantity'] === 1);
+            return $job->products->contains(fn ($p) => $p->name === 'Almost Gone' && $p->stockQuantity === 1);
         });
     }
 
@@ -84,6 +87,7 @@ class LowStockNotificationTest extends TestCase
             'name' => 'Plenty In Stock',
             'price' => 15.00,
             'stock_quantity' => 20,
+            'low_stock_threshold' => 3,
         ]);
 
         CartItem::query()->create([
@@ -110,12 +114,14 @@ class LowStockNotificationTest extends TestCase
             'name' => 'Widget A',
             'price' => 10.00,
             'stock_quantity' => 4,
+            'low_stock_threshold' => 3,
         ]);
 
         $productB = Product::query()->create([
             'name' => 'Widget B',
             'price' => 20.00,
             'stock_quantity' => 5,
+            'low_stock_threshold' => 3,
         ]);
 
         CartItem::query()->create([
@@ -137,8 +143,8 @@ class LowStockNotificationTest extends TestCase
         // A: 4-2=2 (low), B: 5-3=2 (low)
         Bus::assertDispatched(SendLowStockNotification::class, function ($job) {
             return $job->products->count() === 2
-                && $job->products->contains(fn ($p) => $p['name'] === 'Widget A')
-                && $job->products->contains(fn ($p) => $p['name'] === 'Widget B');
+                && $job->products->contains(fn ($p) => $p->name === 'Widget A')
+                && $job->products->contains(fn ($p) => $p->name === 'Widget B');
         });
     }
 
@@ -149,7 +155,7 @@ class LowStockNotificationTest extends TestCase
         config(['mail.admin_email' => 'admin@example.com']);
 
         $products = collect([
-            ['name' => 'Low Item', 'stock_quantity' => 2],
+            new LowStockProductDTO(name: 'Low Item', stockQuantity: 2),
         ]);
 
         $job = new SendLowStockNotification($products);
@@ -167,7 +173,7 @@ class LowStockNotificationTest extends TestCase
         config(['mail.admin_email' => null]);
 
         $products = collect([
-            ['name' => 'Low Item', 'stock_quantity' => 2],
+            new LowStockProductDTO(name: 'Low Item', stockQuantity: 2),
         ]);
 
         $job = new SendLowStockNotification($products);

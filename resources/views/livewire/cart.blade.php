@@ -33,9 +33,9 @@
                     <div class="p-6">
                         <div class="flex items-start justify-between">
                             <div class="flex-1">
-                                <h3 class="text-lg font-semibold text-gray-900">{{ $item->product->name }}</h3>
-                                <p class="mt-1 text-sm text-gray-600">Price: ${{ number_format($item->product->price, 2) }}</p>
-                                <p class="mt-1 text-sm text-gray-600">Subtotal: ${{ number_format($item->quantity * $item->product->price, 2) }}</p>
+                                <h3 class="text-lg font-semibold text-gray-900">{{ $item->productName }}</h3>
+                                <p class="mt-1 text-sm text-gray-600">Price: ${{ number_format($item->productPrice, 2) }}</p>
+                                <p class="mt-1 text-sm text-gray-600">Subtotal: ${{ number_format($item->quantity * $item->productPrice, 2) }}</p>
                             </div>
 
                             <button
@@ -66,13 +66,13 @@
                                     wire:click="updateQuantity({{ $item->id }}, 'increment')"
                                     class="rounded-lg border border-gray-300 px-3 py-1 text-gray-700 hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-blue-500"
                                     wire:loading.attr="disabled"
-                                    @if($item->quantity >= $item->product->stock_quantity) disabled @endif
+                                    @if($item->quantity >= $item->productStockQuantity) disabled @endif
                                 >
                                     +
                                 </button>
                             </div>
 
-                            @if ($item->quantity >= $item->product->stock_quantity)
+                            @if ($item->quantity >= $item->productStockQuantity)
                                 <span class="text-sm text-red-600">Max quantity reached</span>
                             @endif
                         </div>

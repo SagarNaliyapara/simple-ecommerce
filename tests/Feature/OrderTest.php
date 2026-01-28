@@ -300,7 +300,7 @@ class OrderTest extends TestCase
 
         Livewire::actingAs($user)
             ->test(Orders::class)
-            ->assertViewHas('orders', fn (Collection $orders) => $orders->contains($order))
+            ->assertViewHas('orders', fn (Collection $orders) => $orders->contains(fn ($o) => $o->id === $order->id))
             ->assertSee('Order #'.$order->id)
             ->assertSee('Ordered Widget')
             ->assertSee('$90.00')

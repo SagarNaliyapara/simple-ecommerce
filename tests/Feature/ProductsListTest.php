@@ -41,7 +41,7 @@ class ProductsListTest extends TestCase
 
         Livewire::actingAs($user)
             ->test(ProductsList::class)
-            ->assertViewHas('products', fn (Collection $products) => $products->contains($product))
+            ->assertViewHas('products', fn (Collection $products) => $products->contains(fn ($p) => $p->id === $product->id))
             ->assertSee('Widget Alpha')
             ->assertSee('$15.00');
     }

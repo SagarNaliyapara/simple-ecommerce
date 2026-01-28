@@ -11,6 +11,7 @@ class Product extends Model
         'name',
         'price',
         'stock_quantity',
+        'low_stock_threshold',
     ];
 
     protected function casts(): array
@@ -18,6 +19,7 @@ class Product extends Model
         return [
             'price' => 'decimal:2',
             'stock_quantity' => 'integer',
+            'low_stock_threshold' => 'integer',
         ];
     }
 

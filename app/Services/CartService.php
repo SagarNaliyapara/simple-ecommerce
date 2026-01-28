@@ -2,17 +2,26 @@
 
 namespace App\Services;
 
+use App\DTOs\CartItemDTO;
 use App\Models\CartItem;
 use Illuminate\Support\Collection;
 
 class CartService
 {
+    /** @return Collection<int, CartItemDTO> */
     public function getItems(int $userId): Collection
     {
         return CartItem::query()
             ->with('product')
             ->where('user_id', $userId)
-            ->get();
+            ->get()
+            ->map(fn ($item) => new CartItemDTO(
+                id: $item->id,
+                quantity: $item->quantity,
+                productName: $item->product->name,
+                productPrice: (float) $item->product->price,
+                productStockQuantity: $item->product->stock_quantity,
+            ));
     }
 
     public function getItemsWithLock(int $userId): Collection

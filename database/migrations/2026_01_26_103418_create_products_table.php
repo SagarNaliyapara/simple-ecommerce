@@ -13,6 +13,7 @@ return new class extends Migration
             $table->string('name', 100);
             $table->decimal('price');
             $table->integer('stock_quantity');
+            $table->integer('low_stock_threshold')->default(0);
             $table->timestamps();
         });
 

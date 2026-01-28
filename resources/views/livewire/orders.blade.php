@@ -24,7 +24,7 @@
                         <div class="flex items-center justify-between">
                             <div>
                                 <h3 class="text-lg font-semibold text-gray-900">Order #{{ $order->id }}</h3>
-                                <p class="mt-1 text-sm text-gray-600">{{ $order->created_at->format('M d, Y H:i') }}</p>
+                                <p class="mt-1 text-sm text-gray-600">{{ $order->createdAt->format('M d, Y H:i') }}</p>
                             </div>
                             <div class="text-right">
                                 <span class="inline-flex rounded-full px-3 py-1 text-xs font-semibold 
@@ -34,7 +34,7 @@
                                     @endif">
                                     {{ ucfirst($order->status) }}
                                 </span>
-                                <p class="mt-2 text-lg font-bold text-gray-900">${{ number_format($order->total_amount, 2) }}</p>
+                                <p class="mt-2 text-lg font-bold text-gray-900">${{ number_format($order->totalAmount, 2) }}</p>
                             </div>
                         </div>
                     </div>
@@ -42,10 +42,10 @@
                     <div class="p-4">
                         <h4 class="mb-3 text-sm font-semibold text-gray-700">Order Items:</h4>
                         <div class="space-y-3">
-                            @foreach ($order->orderItems as $item)
+                            @foreach ($order->items as $item)
                                 <div class="flex items-center justify-between rounded-lg bg-gray-50 p-3">
                                     <div class="flex-1">
-                                        <p class="font-medium text-gray-900">{{ $item->product->name }}</p>
+                                        <p class="font-medium text-gray-900">{{ $item->productName }}</p>
                                         <p class="text-sm text-gray-600">Quantity: {{ $item->quantity }} × ${{ number_format($item->price, 2) }}</p>
                                     </div>
                                     <p class="font-semibold text-gray-900">${{ number_format($item->quantity * $item->price, 2) }}</p>
