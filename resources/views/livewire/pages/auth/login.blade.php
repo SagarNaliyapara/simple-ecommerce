@@ -49,10 +49,11 @@ new #[Layout('layouts.guest')] class extends Component
     }
 }; ?>
 
-<div>
-    <x-auth-session-status class="mb-4" :status="session('status')" />
+<div class="flex flex-col sm:justify-center items-center pt-6 sm:pt-0">
+    <div class="w-full sm:max-w-md mt-6 px-6 py-4 bg-white shadow-md overflow-hidden sm:rounded-lg">
+        <x-auth-session-status class="mb-4" :status="session('status')" />
 
-    <form wire:submit="login">
+        <form wire:submit="login">
         <div>
             <x-input-label for="email" :value="__('Email')" />
             <x-text-input wire:model="form.email" id="email" class="block mt-1 w-full" type="email" name="email" required autofocus autocomplete="username" />
@@ -97,10 +98,11 @@ new #[Layout('layouts.guest')] class extends Component
             </x-primary-button>
         </div>
     </form>
-    <div class="text-center mt-2 text-sm text-muted-foreground">
-        Don't have an account?
-        <a href="{{ route('register') }}" wire:navigate class="font-bold">
-            Sign up
-        </a>
+        <div class="text-center mt-2 text-sm text-muted-foreground">
+            Don't have an account?
+            <a href="{{ route('register') }}" wire:navigate class="font-bold">
+                Sign up
+            </a>
+        </div>
     </div>
 </div>

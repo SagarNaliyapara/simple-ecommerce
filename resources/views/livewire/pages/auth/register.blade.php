@@ -42,8 +42,9 @@ class extends Component {
     }
 }; ?>
 
-<div>
-    <form wire:submit="register">
+<div class="flex flex-col sm:justify-center items-center pt-6 sm:pt-0">
+    <div class="w-full sm:max-w-md mt-6 px-6 py-4 bg-white shadow-md overflow-hidden sm:rounded-lg">
+        <form wire:submit="register">
         <div>
             <x-input-label for="name" :value="__('Name')"/>
             <x-text-input
@@ -102,18 +103,19 @@ class extends Component {
             <x-input-error :messages="$errors->get('form.password_confirmation')" class="mt-2"/>
         </div>
 
-        <div class="flex items-center justify-end mt-4">
-            <a
-                class="underline text-sm text-gray-600 hover:text-gray-900 rounded-md focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500"
-                href="{{ route('login') }}"
-                wire:navigate
-            >
-                {{ __('Already registered?') }}
-            </a>
+            <div class="flex items-center justify-end mt-4">
+                <a
+                    class="underline text-sm text-gray-600 hover:text-gray-900 rounded-md focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500"
+                    href="{{ route('login') }}"
+                    wire:navigate
+                >
+                    {{ __('Already registered?') }}
+                </a>
 
-            <x-primary-button class="ms-4">
-                {{ __('Register') }}
-            </x-primary-button>
-        </div>
-    </form>
+                <x-primary-button class="ms-4">
+                    {{ __('Register') }}
+                </x-primary-button>
+            </div>
+        </form>
+    </div>
 </div>
